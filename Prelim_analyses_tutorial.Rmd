@@ -1,0 +1,99 @@
+---
+title: "Prelim analyses"
+author: "CLM"
+date: "5/9/2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is a walk through of how to analyze the complete dataset for insect presence in Baptisia fruits from along the Allegheny River. 
+
+
+```{r Load Libraries, include=FALSE}
+if (!require("tidyverse")) install.packages("tidyverse"); library(tidyverse)
+if (!require("MASS")) install.packages("MASS")
+library(MASS)
+install.packages("cowplot", repos='http://cran.us.r-project.org')
+library(cowplot)
+install.packages("UsingR", repos='http://cran.us.r-project.org')
+library(UsingR)
+```
+
+
+Our data is stored as a cvs, kind of like an excels sheet that R will recognize. Make sure the file in is the sam folder as this .Rmd
+```{r read in data}
+prelim_data<-read.csv("prelim_Bap_fruit_data.csv", sep=",", header=TRUE)
+```
+It should now be  the Environment pane in the upper righthand side
+
+##Data Exploration
+An important part of working in R is making sure that the data you read in looks right
+```{r number of columns and rows}
+nrow(prelim_data)
+ncol(prelim_data)
+```
+```{r structure of data}
+str(prelim_data)
+#we may have to come back and change some of the data types, esp b/c I used 0 and 1 for presence absence, so in our case this isn't numeric data it's factor/categorical
+```
+Data types: 
+```{r top and bottom}
+head(prelim_data)
+tail(prelim_data)
+```
+
+We also what to check Ns, whcih means how much data we have and if there are any NAs or empty categories. With this prelim data there are a few.
+
+```{r check Ns}
+apply(prelim_data, 2, function(x) 
+  round(100 * (length(which(is.na(x))))/length(x) , digits = 1)) %>%
+  as.data.frame() %>%
+  `names<-`('Percent of Missing Values')
+```
+To fix the NA problem, there are several approaches remove any observation with an NA of fill it with averages of surrounding values. The best approach here probably to remove the NAs since there are only a few (the ones for immature seeds are the ones we want to remove b/c each ind should have a measure). Hopefully with the full data, we won't have any NAs to worry about. 
+
+
+##Tidy data and data manipulation
+You may have heard of "tidy" data in R. This is just a format for data to make it easy to work with. I tried to design and edit the spreadsheet before making it a csv to make it "tidy." This will allow us to easily manipulate columns etc.
+```{r making an avg length column for seeds}
+#WHY YOU NO WORK
+#prelim_data<- prelim_data %>% mutate(avg_seed_length =rowMeans(10:14), na.rm=T)
+#mydata <- cbind(data,IVMean=rowMeans(data[3:8], na.rm=TRUE))
+prelim_data<-cbind(prelim_data, avg_seed_length=rowMeans(prelim_data[10:14], na.rm=TRUE))
+#prelim_data<- mutate(df, avg_seed_length = rowMeans(select(prelim_data), c(10:14), na.rm = TRUE))
+```
+https://stackoverflow.com/questions/28744419/dplyr-mean-for-multiple-columns
+
+
+#Normal distribution?
+
+Now let's see if DBH is normally distributed:
+```{r distribution of DBH}
+qqnorm(Liana_data$Tree.dbh...cm. , main='Normal Q-Q Plot for DBH')
+```
+
+Hmmm maybe normal, let's look more closely with the function 'simple.eda()' from the UsingR package.
+
+```{r eda for DBH}
+simple.eda(Liana_data$Tree.dbh...cm.)
+```
+Probably, maybe? 
+
+```{r shapiro-wilk test }
+shapiro.test(Liana_data$Tree.dbh...cm.)
+```
+
+##Using a generalized linear model (glm)
+
+```{r}
+glm<- glm(family= binomial, presence2 ~ Tree.dbh...cm. + Stand + Tree.Species.Code , data= Liana_data)
+summary(Liana.glm.1)
+```
+
+use drop term!
+ HW 4 and midterm good resources 
