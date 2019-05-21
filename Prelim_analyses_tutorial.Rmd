@@ -69,31 +69,65 @@ prelim_data<-cbind(prelim_data, avg_seed_length=rowMeans(prelim_data[10:14], na.
 ```
 https://stackoverflow.com/questions/28744419/dplyr-mean-for-multiple-columns
 
+##Dealing with NAs
+```{r replacing NA with fill function}
+vars_to_fill <- c(8:14) #this is everything from Plant_damage to Immature_seeds  
+no_NA_prelim_data <- prelim_data %>% tidyr::fill (vars_to_fill)
+```
+
+
 
 #Normal distribution?
 
 Now let's see if DBH is normally distributed:
 ```{r distribution of DBH}
-qqnorm(Liana_data$Tree.dbh...cm. , main='Normal Q-Q Plot for DBH')
+qqnorm(prelim_data$Tree.dbh...cm. , main='Normal Q-Q Plot for DBH')
 ```
 
 Hmmm maybe normal, let's look more closely with the function 'simple.eda()' from the UsingR package.
 
-```{r eda for DBH}
-simple.eda(Liana_data$Tree.dbh...cm.)
+```{r EDA}
+simple.eda(prelim_data$Length_.mm.)
+simple.eda(prelim_data$Number_of_racemes)
+simple.eda(prelim_data$Fruits_on_plant)
+simple.eda(prelim_data$Height_.m.)
+simple.eda(prelim_data$Approx_dist_to_Allegheny_.m.)
+simple.eda(prelim_data$Number_of_mature_seeds)
+simple.eda(prelim_data$Immature_seeds)
+simple.eda(prelim_data$Avg_seed_length_.mm.)
 ```
 Probably, maybe? 
 
 ```{r shapiro-wilk test }
-shapiro.test(Liana_data$Tree.dbh...cm.)
+shapiro.test(prelim_data$Length_.mm.)
+shapiro.test(prelim_data$Number_of_racemes)
+shapiro.test(prelim_data$Fruits_on_plant)
+shapiro.test(prelim_data$Height_.m.)
+shapiro.test(prelim_data$Approx_dist_to_Allegheny_.m.)
+shapiro.test(prelim_data$Number_of_mature_seeds)
+shapiro.test(prelim_data$Immature_seeds)
+shapiro.test(prelim_data$Avg_seed_length_.mm.)
 ```
+Not:
+Mature seeds
+Height
+Everything else is normally dist
 
 ##Using a generalized linear model (glm)
 
 ```{r}
-glm<- glm(family= binomial, presence2 ~ Tree.dbh...cm. + Stand + Tree.Species.Code , data= Liana_data)
-summary(Liana.glm.1)
+glm<- glm(family= binomial, Damage ~ Site + Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect +Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Number_of_mature_seeds + Immature_seeds + Avg_seed_length_.mm. , data= no_NA_prelim_data, na.action=na.pass)
+summary(glm)
 ```
 
-use drop term!
- HW 4 and midterm good resources 
+```{r}
+mod.selection<-stepAIC(glm, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection) 
+```
+
+glm(formula = Damage ~ Insect_presence + Frass_presence + Fruit_evidence_of_insect + 
+    Number_of_racemes + Number_of_mature_seeds, family = binomial, 
+    data = no_NA_prelim_data, na.action = na.pass)
+AIC: 12
+
