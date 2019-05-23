@@ -131,3 +131,58 @@ glm(formula = Damage ~ Insect_presence + Frass_presence + Fruit_evidence_of_inse
     data = no_NA_prelim_data, na.action = na.pass)
 AIC: 12
 
+##Separating impacted and not
+```{r}
+impacted<- prelim_data %>% filter(Fruit_evidence_of_insect==1) 
+unimpacted <- prelim_data %>% filter(Fruit_evidence_of_insect==0) 
+```
+
+```{r}
+summary(impacted)
+summary(unimpacted)
+```
+avg number mature 
+impacted:12.91
+unimpacted:13.68
+
+avg immature
+impacted: 4
+unimpacted:4.128
+
+avg seed length
+impacted: 4.961
+unimpacted: 5.155
+
+```{r}
+fruit_length<- mean(impacted$Length_.mm., na.rm =TRUE)
+number_of_fruits<- mean(impacted$Fruits_on_plant, na.rm=TRUE)
+mature_seeds<- mean(impacted$Number_of_mature_seeds, na.rm=TRUE)
+immature_seeds<- mean(impacted$Immature_seeds, na.rm=TRUE)
+seed_length<- mean(impacted$Avg_seed_length_.mm., na.rm=TRUE)
+```
+
+```{r}
+impacted_avg <- cbind(fruit_length,number_of_fruits, mature_seeds, immature_seeds, seed_length)
+```
+
+```{r}
+fruit_length2<- mean(unimpacted$Length_.mm., na.rm =TRUE)
+number_of_fruits2<- mean(unimpacted$Fruits_on_plant, na.rm=TRUE)
+mature_seeds2<- mean(unimpacted$Number_of_mature_seeds, na.rm=TRUE)
+immature_seeds2<- mean(unimpacted$Immature_seeds, na.rm=TRUE)
+seed_length2<- mean(unimpacted$Avg_seed_length_.mm., na.rm=TRUE)
+```
+
+```{r}
+unimpacted_avg<- cbind(fruit_length2, number_of_fruits2, mature_seeds2, immature_seeds2, seed_length2)
+```
+
+```{r}
+dataframe<- rbind(impacted_avg, unimpacted_avg)
+```
+
+ttest
+```{r}
+t.test(mature_seeds)
+```
+https://uc-r.github.io/t_test
