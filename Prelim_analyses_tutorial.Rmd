@@ -22,10 +22,11 @@ install.packages("cowplot", repos='http://cran.us.r-project.org')
 library(cowplot)
 install.packages("UsingR", repos='http://cran.us.r-project.org')
 library(UsingR)
+library(dplyr)
 ```
 
 
-Our data is stored as a cvs, kind of like an excels sheet that R will recognize. Make sure the file in is the sam folder as this .Rmd
+Our data is stored as a cvs, kind of like an excels sheet that R will recognize. Make sure the file in is the same folder as this .Rmd
 ```{r read in data}
 prelim_data<-read.csv("prelim_Bap_fruit_data.csv", sep=",", header=TRUE)
 ```
@@ -79,7 +80,6 @@ no_NA_prelim_data <- prelim_data %>% tidyr::fill (vars_to_fill)
 
 #Normal distribution?
 
-Now let's see if DBH is normally distributed:
 ```{r distribution of DBH}
 qqnorm(prelim_data$Tree.dbh...cm. , main='Normal Q-Q Plot for DBH')
 ```
@@ -113,13 +113,23 @@ Mature seeds
 Height
 Everything else is normally dist
 
+```{r}
+shapiro.test(log10(prelim_data$Number_of_mature_seeds))
+#log not great for this, I think the issue is an outlier 
+shapiro.test(log(prelim_data$Height_.m.))
+#cuts p in half 
+```
+
+
 ##Using a generalized linear model (glm)
 
 ```{r}
-glm<- glm(family= binomial, Damage ~ Site + Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect +Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Number_of_mature_seeds + Immature_seeds + Avg_seed_length_.mm. , data= no_NA_prelim_data, na.action=na.pass)
+glm<- glm(family=binomial, Damage ~ Site + Length_.mm. +Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Number_of_mature_seeds + Immature_seeds + Avg_seed_length_.mm. , data= no_NA_prelim_data, na.action=na.pass)
 summary(glm)
 ```
-
+I think I need Poisson b/c I have mixed response variables when I use seed as response but damage is y/n so I think binomial
+https://personal.psu.edu/abs12/stat504/online/07_poisson/02_poisson_beyond.htm
+https://newonlinecourses.science.psu.edu/stat504/node/216/
 ```{r}
 mod.selection<-stepAIC(glm, trace=TRUE, na.action=na.pass) 
 
@@ -181,8 +191,230 @@ unimpacted_avg<- cbind(fruit_length2, number_of_fruits2, mature_seeds2, immature
 dataframe<- rbind(impacted_avg, unimpacted_avg)
 ```
 
+I don't know how helpful the above is. I took some time to reformat data in excel. 
+```{r}
+ttest.data<- read.csv("ttest_data.csv", sep=",", header=TRUE) 
+```
+```{r}
+vars_to_fill <- c(2:6)
+no.NA.ttest.data<- prelim_data %>% tidyr::fill (vars_to_fill)
+```
+
+
 ttest
 ```{r}
-t.test(mature_seeds)
+t.test(Number_of_mature_seeds ~ status, ttest.data)
+t.test(Immature_seeds ~ status, ttest.data)
+t.test(Avg_seed_length_.mm. ~ status, ttest.data)
+t.test(Fruits_on_plant ~ status, ttest.data)
 ```
 https://uc-r.github.io/t_test
+
+
+###glm for one site
+```{r}
+site1<- no_NA_prelim_data %>% filter (Site==1)
+```
+
+```{r}
+glm_site1<- glm(family= binomial, Damage ~ Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect +Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Number_of_mature_seeds + Immature_seeds + Avg_seed_length_.mm. , data= site1, na.action=na.pass)
+summary(glm_site1)
+```
+
+```{r}
+mod.selection_s1<-stepAIC(glm_site1, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection_s1) 
+```
+
+
+##Site 9
+
+```{r}
+site9<- no_NA_prelim_data %>% filter (Site==9)
+```
+
+```{r}
+glm_site9<- glm(family=binomial, Damage ~ Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect +Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Number_of_mature_seeds + Immature_seeds + Avg_seed_length_.mm. , data= site9, na.action=na.pass)
+summary(glm_site9)
+```
+
+```{r}
+mod.selection_s9<-stepAIC(glm_site9, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection_s9)
+```
+
+##Site 14
+
+```{r}
+site14<- no_NA_prelim_data %>% filter (Site==14)
+```
+
+```{r}
+glm_site14<- glm(family=binomial, Damage ~ Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect +Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Number_of_mature_seeds + Immature_seeds + Avg_seed_length_.mm. , data= site14, na.action=na.pass)
+summary(glm_site14)
+```
+
+```{r}
+mod.selection_s14<-stepAIC(glm_site14, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection_s14)
+```
+
+
+##Site 21
+
+```{r}
+site21<- no_NA_prelim_data %>% filter (Site==21)
+```
+
+```{r}
+glm_site21<- glm(family=binomial, Damage ~ Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect +Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Number_of_mature_seeds + Immature_seeds + Avg_seed_length_.mm. , data= site21, na.action=na.pass)
+summary(glm_site21)
+```
+
+```{r}
+mod.selection_s21<-stepAIC(glm_site21, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection_s21)
+```
+
+
+##Site26
+
+```{r}
+site26<- no_NA_prelim_data %>% filter (Site==26)
+```
+
+```{r}
+glm_site26<- glm(family=binomial, Damage ~ Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect +Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Number_of_mature_seeds + Immature_seeds + Avg_seed_length_.mm. , data= site26, na.action=na.pass)
+summary(glm_site26)
+```
+
+```{r}
+mod.selection_s26<-stepAIC(glm_site26, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection_s26)
+```
+
+
+##Graphs to direct next analyses
+```{r}
+library(ggplot2)
+```
+
+```{r}
+pop_fruit_data$site <- as.character(pop_fruit_data$site)
+```
+
+```{r}
+#need to change data type for the site 
+damage_graph<-ggplot(pop_fruit_data, aes(x=site, y=no.plant_damage)) +
+  geom_bar(stat="identity")
+damage_graph
+```
+
+
+##another glm
+
+###seeds
+```{r}
+glm_seed<- glm(Number_of_mature_seeds ~ Damage+ Site + Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect +Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Immature_seeds + Avg_seed_length_.mm. , family=poisson, data= no_NA_prelim_data, na.action=na.pass)
+summary(glm_seed)
+```
+
+```{r}
+mod.selection_seed<-stepAIC(glm_seed, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection_seed) 
+```
+
+#####individual sites
+
+##Site 1
+
+```{r}
+glm_site1_seed<- glm(Number_of_mature_seeds ~ Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect +Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Damage + Immature_seeds + Avg_seed_length_.mm. , data= site1, na.action=na.pass)
+summary(glm_site1_seed)
+```
+
+```{r}
+mod.selection_s1_seed<-stepAIC(glm_site1_seed, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection_s1_seed) 
+```
+nada
+
+##Site 9
+
+```{r}
+glm_site9_seed<- glm(Number_of_mature_seeds ~ Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect +Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Damage + Immature_seeds + Avg_seed_length_.mm. , data= site9, na.action=na.pass)
+summary(glm_site9_seed)
+```
+
+```{r}
+mod.selection_s9_seed<-stepAIC(glm_site9_seed, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection_s9_seed)
+```
+*fruits on plants
+*approx dist to Allegheny 
+
+##Site 14
+
+```{r}
+glm_site14_seed<- glm( Number_of_mature_seeds ~ Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect +Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Damage + Immature_seeds + Avg_seed_length_.mm. , data= site14, na.action=na.pass)
+summary(glm_site14_seed)
+```
+
+```{r}
+mod.selection_s14_seed<-stepAIC(glm_site14_seed, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection_s14_seed)
+```
+*length
+*frass
+*approx dist to Allegheny
+
+##Site 21
+
+```{r}
+glm_site21_seed<- glm( Number_of_mature_seeds ~ Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect +Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Damage + Immature_seeds + Avg_seed_length_.mm. , data= site21, na.action=na.pass)
+summary(glm_site21_seed)
+```
+
+```{r}
+mod.selection_s21_seed<-stepAIC(glm_site21_seed, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection_s21_seed)
+```
+**length
+**insect presence
+**immature seeds
+
+##Site26
+
+```{r}
+glm_site26_seed<- glm( Number_of_mature_seeds ~ Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect +Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Damage + Immature_seeds + Avg_seed_length_.mm. , data= site26, na.action=na.pass)
+summary(glm_site26_seed)
+```
+
+```{r}
+mod.selection_s26_seed<-stepAIC(glm_site26_seed, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection_s26_seed)
+```
+nada
+
+###fruits
+```{r}
+glm_fruits<- glm(Fruits_on_plant~ Damage+ Number_of_mature_seeds+ Site + Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect +Plant_damage + Number_of_racemes + Height_.m. + Approx_dist_to_Allegheny_.m. + Immature_seeds + Avg_seed_length_.mm. , data= no_NA_prelim_data, na.action=na.pass)
+summary(glm_fruits)
+```
+
+```{r}
+mod.selection_fruits<-stepAIC(glm_fruits, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection_fruits) 
+```
