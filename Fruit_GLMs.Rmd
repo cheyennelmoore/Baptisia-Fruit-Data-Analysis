@@ -1,0 +1,306 @@
+---
+title: "Fruit Analyses"
+author: "CLM"
+date: "10/4/2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+This R markdown contains analyses for Baptisia australis var. asutralis fruit herbivory/granivory data collected in July 2018. 
+
+It is a continuation of work done in the Prelim_analyses_tutorial.Rmd
+
+Several statistical decsions were made apriori and these will be detailed throughout this Rmd
+
+```{r Load Libraries, include=FALSE}
+if (!require("tidyverse")) install.packages("tidyverse"); library(tidyverse)
+if (!require("MASS")) install.packages("MASS")
+library(MASS)
+install.packages("cowplot", repos='http://cran.us.r-project.org')
+library(cowplot)
+install.packages("UsingR", repos='http://cran.us.r-project.org')
+library(UsingR)
+library(dplyr)
+library (arm)
+```
+
+#The data
+Our data is stored as a cvs, kind of like an excels sheet that R will recognize. Make sure the file in is the same folder as this .Rmd
+```{r read in data}
+prelim_data<-read.csv("prelim_Bap_fruit_data.csv", sep=",", header=TRUE)
+```
+It should now be  the Environment pane in the upper righthand side
+
+##Data Exploration
+An important part of working in R is making sure that the data you read in looks right
+```{r number of columns and rows}
+nrow(prelim_data)
+ncol(prelim_data)
+```
+```{r structure of data}
+str(prelim_data)
+#we may have to come back and change some of the data types, esp b/c I used 0 and 1 for presence absence, so in our case this isn't numeric data it's factor/categorical
+```
+Data types: 
+```{r top and bottom}
+head(prelim_data)
+tail(prelim_data)
+```
+
+We also what to check Ns, whcih means how much data we have and if there are any NAs or empty categories. With this prelim data there are a few.
+
+```{r check Ns}
+apply(prelim_data, 2, function(x) 
+  round(100 * (length(which(is.na(x))))/length(x) , digits = 1)) %>%
+  as.data.frame() %>%
+  `names<-`('Percent of Missing Values')
+```
+To fix the NA problem, there are several approaches remove any observation with an NA of fill it with averages of surrounding values. The best approach here probably to remove the NAs since there are only a few (the ones for immature seeds are the ones we want to remove b/c each ind should have a measure). Hopefully with the full data, we won't have any NAs to worry about. 
+
+
+##Tidy data and data manipulation
+You may have heard of "tidy" data in R. This is just a format for data to make it easy to work with. I tried to design and edit the spreadsheet before making it a csv to make it "tidy." This will allow us to easily manipulate columns etc.
+```{r making an avg length column for seeds}
+#WHY YOU NO WORK
+#prelim_data<- prelim_data %>% mutate(avg_seed_length =rowMeans(10:14), na.rm=T)
+#mydata <- cbind(data,IVMean=rowMeans(data[3:8], na.rm=TRUE))
+prelim_data<-cbind(prelim_data, avg_seed_length=rowMeans(prelim_data[10:14], na.rm=TRUE))
+#prelim_data<- mutate(df, avg_seed_length = rowMeans(select(prelim_data), c(10:14), na.rm = TRUE))
+```
+https://stackoverflow.com/questions/28744419/dplyr-mean-for-multiple-columns
+
+##Dealing with NAs
+```{r replacing NA with fill function}
+vars_to_fill <- c(8:14) #this is everything from Plant_damage to Immature_seeds  
+no_NA_prelim_data <- prelim_data %>% tidyr::fill (vars_to_fill)
+```
+
+```{r}
+no_NA_prelim_data[is.na(no_NA_prelim_data)] <- 0
+```
+
+```{r}
+no_NA_prelim_data<-cbind(no_NA_prelim_data, avg_seed_length=rowMeans(no_NA_prelim_data[10:14], na.rm=TRUE))
+```
+
+```{r} 
+no_NA_prelim_data[13]<-lapply(no_NA_prelim_data[13], as.integer)
+```
+
+
+```{r}
+str(no_NA_prelim_data)
+```
+CRAP on a cracker
+site has been an integer and seeds to be a factor, also all the presence absence junk
+```{r}
+no_NA_prelim_data$Site<- as.factor(no_NA_prelim_data$Site)
+```
+```{r}
+no_NA_prelim_data$Damage<-as.logical(no_NA_prelim_data$Damage)
+no_NA_prelim_data$Insect_presence<-as.logical(no_NA_prelim_data$Insect_presence)
+no_NA_prelim_data$Frass_presence<-as.logical(no_NA_prelim_data$Frass_presence)
+no_NA_prelim_data$Fruit_evidence_of_insect<-as.logical(no_NA_prelim_data$Fruit_evidence_of_insect)
+no_NA_prelim_data$Plant_damage<-as.logical(no_NA_prelim_data$Plant_damage)
+```
+
+```{r}
+str(no_NA_prelim_data)
+```
+fixed
+
+Now we have data, let's see if it's normal
+```{r shapiro-wilk test }
+shapiro.test(prelim_data$Length_.mm.)
+shapiro.test(prelim_data$Number_of_racemes)
+shapiro.test(prelim_data$Fruits_on_plant)
+shapiro.test(prelim_data$Height_.m.)
+shapiro.test(prelim_data$Approx_dist_to_Allegheny_.m.)
+shapiro.test(prelim_data$Number_of_mature_seeds)
+shapiro.test(prelim_data$Immature_seeds)
+shapiro.test(prelim_data$Avg_seed_length_.mm.)
+```
+Not:
+Mature seeds
+Height
+Everything else is normally dist
+
+Will likely have to use a poisson dist b/c of data that is not normal, that's okay though, that's pretty normal
+
+#STATS
+
+We decide to use GLMs to analyze the data
+This was chosen over GLMM in part due to audience (practitioners) but also due to similaritie between test. Talked with Dr. Field and we decided that there are no clear advantages to a GLMM. I'll start with pretty "full" models and then trim them down. 
+
+#Question 1
+Are insects impacting seed set in these populations of Baptisia? Is insect presence correlated with anything other maeasured varibles?
+I've created a "damage" category in the data that encompasses presence/absence of insects (frass, insect, damage) this is the random/response variable
+B/c it's presence absence it will use a binonial family
+```{r}
+glm_damage1<- glm(family=binomial, Damage ~ Site + Length_.mm. +Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Number_of_mature_seeds + Immature_seeds + Avg_seed_length_.mm. , data= no_NA_prelim_data, na.action=na.pass)
+summary(glm_damage1)
+```
+AIC: 67.252
+
+
+```{r}
+glm_damage2<- glm(family=binomial, Damage ~ Site + Number_of_racemes + Fruits_on_plant +  Approx_dist_to_Allegheny_.m.  , data= no_NA_prelim_data, na.action=na.pass)
+summary(glm_damage2)
+```
+AIC: 74.109
+
+```{r}
+glm_damage3<- glm(family=binomial, Damage ~ Site + Number_of_racemes + Fruits_on_plant +  Approx_dist_to_Allegheny_.m.+ Avg_seed_length_.mm., data= no_NA_prelim_data, na.action=na.pass )
+summary(glm_damage3)
+```
+AIC: 74.514
+
+```{r}
+mod.selection1<-stepAIC(glm_damage1, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection1) 
+```
+AIC: 65.154
+
+                              Estimate Std. Error z value Pr(>|z|)  
+(Intercept)                  -10.06752    5.05511  -1.992   0.0464 *
+Site9                          2.19160    1.97458   1.110   0.2670  
+Site14                         2.24923    2.25846   0.996   0.3193  
+Site21                         5.45833    2.28644   2.387   0.0170 *
+Site26                         1.74309    2.60990   0.668   0.5042  
+Length_.mm.                    0.27510    0.12657   2.173   0.0297 *
+Plant_damageTRUE               3.06400    1.34374   2.280   0.0226 *
+Number_of_racemes              0.28518    0.11470   2.486   0.0129 *
+Fruits_on_plant               -0.05632    0.02600  -2.166   0.0303 *
+Approx_dist_to_Allegheny_.m.  -0.09166    0.06048  -1.516   0.1296  
+Avg_seed_length_.mm.          -0.81477    0.49368  -1.650   0.0989 .
+
+
+#Question 2
+Is insect presence reducing the number of seeds? Are there are other factors associated with few seeds? 
+Because not all data is normal, a poisson distribution is used for the GLM. 
+```{r}
+glm_seed1<- glm(Number_of_mature_seeds ~ Damage + Site + Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect + Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Immature_seeds + Avg_seed_length_.mm. , family=poisson, data= no_NA_prelim_data, na.action=na.pass)
+summary(glm_seed1)
+```
+AIC: 518.34
+
+```{r}
+glm_seed2<- glm(Number_of_mature_seeds ~ Damage+ Site + Length_.mm. + Insect_presence + Frass_presence+ Number_of_racemes + Fruits_on_plant + Height_.m. + Immature_seeds + Avg_seed_length_.mm. , family=poisson, data= no_NA_prelim_data, na.action=na.pass)
+summary(glm_seed2)
+```
+AIC: 514.04
+
+```{r}
+mod.selection_seed<-stepAIC(glm_seed1, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection_seed) 
+```
+yields model same as one above! Boom!
+
+```{r idk i hate glm lolol}
+glm_seed3<- glm(Number_of_mature_seeds ~  Site + Length_.mm. + Insect_presence + Frass_presence+ Number_of_racemes + Fruits_on_plant + Height_.m. + Immature_seeds , family=poisson, data= no_NA_prelim_data, na.action=na.pass)
+summary(glm_seed3)
+```
+AIC: 531.4
+
+Coefficients
+http://environmentalcomputing.net/interpreting-coefficients-in-glms/
+https://www.theanalysisfactor.com/r-glm-model-fit/
+```{r}
+glm_seed3$coefficients
+```
+
+```{r smart glm}
+glm_seed4<- glm(Number_of_mature_seeds ~  Site + Length_.mm. +  Frass_presence+ Number_of_racemes+ + Fruits_on_plant + Height_.m. + Immature_seeds , family=poisson, data= no_NA_prelim_data, na.action=na.pass)
+summary(glm_seed4)
+```
+AIC: 545.24
+                    Estimate Std. Error z value Pr(>|z|)    
+(Intercept)         2.037086   0.281250   7.243 4.39e-13 ***
+Site9               0.393166   0.100586   3.909 9.28e-05 ***
+Site14             -0.146911   0.119857  -1.226 0.220304    
+Site21              0.482020   0.105185   4.583 4.59e-06 ***
+Site26             -0.014681   0.118210  -0.124 0.901164    
+Length_.mm.         0.028584   0.005512   5.185 2.15e-07 ***
+Frass_presenceTRUE -0.400166   0.112535  -3.556 0.000377 ***
+Number_of_racemes  -0.009717   0.006423  -1.513 0.130306    
+Fruits_on_plant     0.003822   0.001324   2.886 0.003898 ** 
+Height_.m.         -0.281760   0.209971  -1.342 0.179628    
+Immature_seeds     -0.048551   0.009832  -4.938 7.90e-07 ***
+
+```{r}
+mod.selection_seed2<-stepAIC(glm_seed4, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection_seed2)
+```
+AIC: 544.64
+                    Estimate Std. Error z value Pr(>|z|)    
+(Intercept)         1.683008   0.197602   8.517  < 2e-16 ***
+Site9               0.422283   0.099060   4.263 2.02e-05 ***
+Site14             -0.118393   0.114563  -1.033   0.3014    
+Site21              0.500657   0.105043   4.766 1.88e-06 ***
+Site26             -0.044425   0.110399  -0.402   0.6874    
+Length_.mm.         0.029257   0.005387   5.431 5.61e-08 ***
+Frass_presenceTRUE -0.448829   0.109268  -4.108 4.00e-05 ***
+Fruits_on_plant     0.002319   0.001034   2.242   0.0249 *  
+Immature_seeds     -0.052507   0.009624  -5.456 4.87e-08 ***
+
+```{r}
+glm_seed5<- glm(Number_of_mature_seeds ~  Site + Length_.mm. + Insect_presence + Frass_presence + Fruit_evidence_of_insect + Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Immature_seeds + Avg_seed_length_.mm. , family=poisson, data= no_NA_prelim_data, na.action=na.pass)
+summary(glm_seed5)
+```
+AIC: 517.29
+actually no b/c sample size
+
+```{r}
+glm_seed6<- glm(Number_of_mature_seeds ~  Site + Length_.mm. + Damage + Plant_damage + Number_of_racemes + Fruits_on_plant + Height_.m. + Approx_dist_to_Allegheny_.m. + Immature_seeds + Avg_seed_length_.mm. , family=poisson, data= no_NA_prelim_data, na.action=na.pass)
+summary(glm_seed6)
+```
+AIC: 538.76
+
+                              Estimate Std. Error z value Pr(>|z|)    
+(Intercept)                   1.405025   0.335541   4.187 2.82e-05 ***
+Site9                         0.436269   0.146076   2.987 0.002821 ** 
+Site14                        0.141510   0.154083   0.918 0.358406    
+Site21                        0.520720   0.131887   3.948 7.87e-05 ***
+Site26                        0.123570   0.225613   0.548 0.583891    
+Length_.mm.                   0.018430   0.005710   3.228 0.001248 ** 
+DamageTRUE                   -0.007925   0.097525  -0.081 0.935238    
+Plant_damageTRUE              0.111911   0.082605   1.355 0.175490    
+Number_of_racemes            -0.018341   0.006842  -2.681 0.007348 ** 
+Fruits_on_plant               0.004912   0.001461   3.362 0.000773 ***
+Height_.m.                   -0.571641   0.218226  -2.619 0.008806 ** 
+Approx_dist_to_Allegheny_.m. -0.003130   0.004639  -0.675 0.499830    
+Immature_seeds               -0.035414   0.010074  -3.515 0.000439 ***
+Avg_seed_length_.mm.          0.214676   0.048783   4.401 1.08e-05 ***
+
+```{r}
+mod.selection_seed3<-stepAIC(glm_seed6, trace=TRUE, na.action=na.pass) 
+
+summary(mod.selection_seed3)
+```
+AIC: 535.01
+
+ugh no, kicks out damage..
+
+
+Maybe try Bayesglm in arm https://www.rdocumentation.org/packages/arm/versions/1.10-1/topics/bayesglm
+```{r}
+R.version$year
+
+```
+
+```{r}
+b_glm_seed4 <- bayesglm(Number_of_mature_seeds ~  Site + Length_.mm. +  Frass_presence+ Number_of_racemes + Fruits_on_plant + Height_.m. + Immature_seeds , family=poisson, data= no_NA_prelim_data, na.action=na.pass)
+summary(b_glm_seed4)
+```
+same results 
+AIC: 545.24
+
