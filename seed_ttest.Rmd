@@ -1,0 +1,54 @@
+---
+title: "seed count ttest"
+author: "CLM"
+date: "12/6/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+prelim_data<-read.csv("prelim_Bap_fruit_data.csv", sep=",", header=TRUE)
+```
+
+```{r}
+seed_data<- read.csv("Baptisia_seed_counts.csv", sep=",", header=TRUE)
+```
+
+```{r}
+str(seed_data)
+```
+```{r}
+seed_data$Site<- as.factor(seed_data$Site)
+seed_data$Expected_number_of_seeds<- as.numeric(seed_data$Expected_number_of_seeds)
+seed_data$Number_of_seeds<- as.numeric(seed_data$Number_of_seeds)
+```
+
+```{r}
+seed_data<-na.omit(seed_data)
+```
+
+ttest
+```{r}
+t.test(data= seed_data, Number_of_seeds, Expected_number_of_seeds)
+```
+So this is isn't working: following error "Error in t.test(data = seed_data, Number_of_seeds, Expected_number_of_seeds) : 
+  object 'Number_of_seeds' not found"
+  
+  
+I think I need to do ttest with just averages and do a one way ttest
+
+
+```{r}
+t.test(seed_data$Number_of_seeds, mu = 25, alternative = "two.sided")
+```
+
+
+there ya go! significantly less seeds in Allegheny pops than expected according to Isely
+
+
+
+http://www.sthda.com/english/wiki/one-sample-t-test-in-r
+https://uc-r.github.io/t_test
