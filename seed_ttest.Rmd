@@ -48,6 +48,41 @@ t.test(seed_data$Number_of_seeds, mu = 25, alternative = "two.sided")
 
 there ya go! significantly less seeds in Allegheny pops than expected according to Isely
 
+should also check per pop 
+```{r}
+seeds_site1 <- seed_data %>% filter(Site==1) 
+seeds_site9 <- seed_data %>% filter(Site==9) 
+seeds_site14 <- seed_data %>% filter(Site==14) 
+seeds_site21 <- seed_data %>% filter(Site==21) 
+seeds_site26 <- seed_data %>% filter(Site==26) 
+```
+
+
+```{r}
+t.test(seeds_site1$Number_of_seeds, mu = 25, alternative = "two.sided")
+t.test(seeds_site9$Number_of_seeds, mu = 25, alternative = "two.sided")
+t.test(seeds_site14$Number_of_seeds, mu = 25, alternative = "two.sided")
+t.test(seeds_site21$Number_of_seeds, mu = 25, alternative = "two.sided")
+t.test(seeds_site26$Number_of_seeds, mu = 25, alternative = "two.sided")
+```
+
+Yep! Golden
+
+Next I should do ttest for plants w/ no damage
+
+```{r}
+prelim_data<-read.csv("prelim_Bap_fruit_data.csv", sep=",", header=TRUE)
+```
+```{r}
+prelim_ttest<- prelim_data %>% filter(Damage==0)
+```
+
+```{r}
+t.test(prelim_ttest$Number_of_mature_seeds, mu = 25, alternative = "two.sided")
+```
+still significant
+
+
 
 
 http://www.sthda.com/english/wiki/one-sample-t-test-in-r
