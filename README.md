@@ -10,8 +10,8 @@ It is well annotated code to complete generalized linear models for the two main
 Finally, [Seed Count ttest](cheyennelmoore/Baptisia-Fruit-Data-Analyses/seed_ttest.Rmd) is a ttest to compare 
 the number of seeds we found in our sampled populations to the number of seeds expected based on plant keys.
 
-You'll also find 2 data files that were used for all final analyses. Prelim_Bap_fruit_data is all raw data used for [Preliminary Analyses and Tutorial](cheyennelmoore/Baptisia-Fruit-Data-Analyses/Prelim_analyses_tutorial.Rmd) and [Fruit Granivory GLMs](cheyennelmoore/Baptisia-Fruit-Data-Analyses/Fruit_GLMs.Rmd).
-Baptisia_seed_counts was used for the [Seed Count ttest](cheyennelmoore/Baptisia-Fruit-Data-Analyses/seed_ttest.Rmd) markdown. 
+You'll also find 2 data files that were used for all final analyses. [Prelim_Bap_fruit_datacsv] is all raw data used for [Preliminary Analyses and Tutorial](cheyennelmoore/Baptisia-Fruit-Data-Analyses/Prelim_analyses_tutorial.Rmd) and [Fruit Granivory GLMs](cheyennelmoore/Baptisia-Fruit-Data-Analyses/Fruit_GLMs.Rmd).
+[Baptisia_seed_counts.csv] was used for the [Seed Count ttest](cheyennelmoore/Baptisia-Fruit-Data-Analyses/seed_ttest.Rmd) markdown. 
 
 All code was written and annotated by me, Cheyenne Moore. 
 All data was collected from a subset of populations of Baptisia australis var. australis along the Allegheny River in PA. 
