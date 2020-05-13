@@ -97,7 +97,7 @@ no_NA_prelim_data[13]<-lapply(no_NA_prelim_data[13], as.integer)
 ```{r}
 str(no_NA_prelim_data)
 ```
-CRAP on a cracker
+
 site has been an integer and seeds to be a factor, also all the presence absence junk
 ```{r}
 no_NA_prelim_data$Site<- as.factor(no_NA_prelim_data$Site)

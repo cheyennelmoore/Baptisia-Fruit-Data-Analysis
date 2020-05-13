@@ -5,15 +5,17 @@ date: "12/6/2019"
 output: html_document
 ---
 
+This Rmd contains code to do a ttest between number of seeds found along the Allegheny River in PA for my reseach vs the number of seeds reported for the species in keys. 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r whole dataframe}
 prelim_data<-read.csv("prelim_Bap_fruit_data.csv", sep=",", header=TRUE)
 ```
 
-```{r}
+```{r seed dataframe}
 seed_data<- read.csv("Baptisia_seed_counts.csv", sep=",", header=TRUE)
 ```
 

@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This is a walk through of how to analyze the complete dataset for insect presence in Baptisia fruits from along the Allegheny River. 
 
+It's part tutorial, part test code. 
+
 
 ```{r Load Libraries, include=FALSE}
 if (!require("tidyverse")) install.packages("tidyverse"); library(tidyverse)
